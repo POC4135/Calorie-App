@@ -1,0 +1,27 @@
+{
+  "meals": [],
+  "daily_summary": [],
+  "weight_log": [
+    {
+      "id": 1,
+      "date": "2026-05-12",
+      "weight_kg": 78.0,
+      "timestamp": "2026-05-12T08:33:01.380286Z"
+    }
+  ],
+  "wellbeing_log": [],
+  "user_profile": {
+    "age": "29",
+    "weight_kg": "78",
+    "activity_level": "moderate",
+    "goal": "body_recomp",
+    "protein_target_g": "156",
+    "fat_target_g": "70",
+    "carbs_target_g": "300",
+    "fiber_target_g": "34",
+    "sugar_limit_g": "50",
+    "sodium_limit_mg": "2300"
+  },
+  "suggestions": [],
+  "last_updated": "2026-05-12T08:33:01.393374Z"
+}
