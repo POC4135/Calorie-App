@@ -148,7 +148,28 @@
     <script>
         async function loadData() {
             try {
-                const response = await fetch('../dashboard_data.json').catch(() => fetch('/dashboard_data.json'));
+                // Try multiple possible paths for the JSON file
+                let response;
+                const paths = [
+                    '../dashboard_data.json',  // Up one level
+                    '/dashboard_data.json',     // Root
+                    'dashboard_data.json',      // Same level
+                    'https://raw.githubusercontent.com/POC4135/Calorie-App/main/dashboard_data.json'  // Direct from GitHub
+                ];
+                
+                for (const path of paths) {
+                    try {
+                        response = await fetch(path);
+                        if (response.ok) break;
+                    } catch (e) {
+                        continue;
+                    }
+                }
+                
+                if (!response || !response.ok) {
+                    throw new Error('Could not load data from any path');
+                }
+                
                 const data = await response.json();
                 
                 document.getElementById('loading').style.display = 'none';
@@ -161,7 +182,7 @@
                 renderMealTable(data);
             } catch (error) {
                 document.getElementById('loading').innerHTML = 
-                    'Error loading data. Make sure dashboard_data.json exists in the repo root.';
+                    'Error loading data: ' + error.message + '<br><br>Make sure dashboard_data.json exists in the repo root.';
             }
         }
         
@@ -193,7 +214,7 @@
                 },
                 {
                     label: 'Current Weight',
-                    value: data.weight_log[0]?.weight_kg + ' kg',
+                    value: (data.weight_log[0]?.weight_kg || 'N/A') + ' kg',
                     target: `Last: ${data.weight_log[0]?.date || 'N/A'}`
                 },
                 {
