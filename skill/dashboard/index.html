@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calorie Tracker Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #FFFFFF;
+            color: #111827;
+            line-height: 1.6;
+        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+        h1 { font-size: 2rem; font-weight: 600; margin-bottom: 2rem; }
+        h2 { font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem; }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: #F9FAFB;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+        
+        .stat-label { font-size: 0.875rem; color: #6B7280; margin-bottom: 0.5rem; }
+        .stat-value { font-size: 2rem; font-weight: 600; color: #2563EB; }
+        .stat-target { font-size: 0.875rem; color: #6B7280; margin-top: 0.25rem; }
+        
+        .chart-container {
+            background: #F9FAFB;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .meal-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #F9FAFB;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .meal-table th {
+            background: #F3F4F6;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: #374151;
+        }
+        
+        .meal-table td {
+            padding: 1rem;
+            border-top: 1px solid #E5E7EB;
+            font-size: 0.875rem;
+        }
+        
+        .meal-table tr:hover { background: #F3F4F6; }
+        
+        .suggestions {
+            background: #FEF3C7;
+            border: 1px solid #FCD34D;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .suggestion-item {
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #FDE68A;
+        }
+        
+        .suggestion-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        
+        .btn {
+            background: #2563EB;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-right: 0.5rem;
+        }
+        
+        .btn:hover { background: #1D4ED8; }
+        
+        .loading { text-align: center; padding: 3rem; color: #6B7280; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Calorie Tracker Dashboard</h1>
+        
+        <div id="loading" class="loading">Loading data from GitHub...</div>
+        
+        <div id="dashboard" style="display: none;">
+            <div class="stats-grid" id="statsGrid"></div>
+            
+            <div class="chart-container">
+                <h2>7-Day Macro Trends</h2>
+                <canvas id="macroChart"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <h2>Weight Trend (30 Days)</h2>
+                <canvas id="weightChart"></canvas>
+            </div>
+            
+            <div id="suggestionsContainer"></div>
+            
+            <h2>Recent Meals</h2>
+            <table class="meal-table" id="mealTable">
+                <thead>
+                    <tr>
+                        <th>Date/Time</th>
+                        <th>Meal</th>
+                        <th>Calories</th>
+                        <th>Protein</th>
+                        <th>Carbs</th>
+                        <th>Fat</th>
+                        <th>Confidence</th>
+                    </tr>
+                </thead>
+                <tbody id="mealTableBody"></tbody>
+            </table>
+            
+            <div style="margin-top: 2rem;">
+                <button class="btn" onclick="location.reload()">Refresh Data</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        async function loadData() {
+            try {
+                const response = await fetch('../dashboard_data.json');
+                const data = await response.json();
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+                
+                renderStats(data);
+                renderMacroChart(data);
+                renderWeightChart(data);
+                renderSuggestions(data);
+                renderMealTable(data);
+            } catch (error) {
+                document.getElementById('loading').innerHTML = 
+                    'Error loading data. Make sure dashboard_data.json exists in the repo root.';
+            }
+        }
+        
+        function renderStats(data) {
+            const today = new Date().toISOString().split('T')[0];
+            const todaySummary = data.daily_summary.find(d => d.date === today) || {};
+            const targets = data.user_profile;
+            
+            const stats = [
+                {
+                    label: 'Today\'s Calories',
+                    value: Math.round(todaySummary.total_calories || 0),
+                    target: '~2,600 kcal target'
+                },
+                {
+                    label: 'Protein',
+                    value: Math.round(todaySummary.total_protein_g || 0) + 'g',
+                    target: `${Math.round((todaySummary.total_protein_g || 0) / 156 * 100)}% of 156g`
+                },
+                {
+                    label: 'Carbs',
+                    value: Math.round(todaySummary.total_carbs_g || 0) + 'g',
+                    target: `${Math.round((todaySummary.total_carbs_g || 0) / 300 * 100)}% of 300g`
+                },
+                {
+                    label: 'Fat',
+                    value: Math.round(todaySummary.total_fat_g || 0) + 'g',
+                    target: `${Math.round((todaySummary.total_fat_g || 0) / 70 * 100)}% of 70g`
+                },
+                {
+                    label: 'Current Weight',
+                    value: data.weight_log[0]?.weight_kg + ' kg',
+                    target: `Last: ${data.weight_log[0]?.date || 'N/A'}`
+                },
+                {
+                    label: 'Meals Today',
+                    value: todaySummary.meal_count || 0,
+                    target: 'entries logged'
+                }
+            ];
+            
+            const grid = document.getElementById('statsGrid');
+            grid.innerHTML = stats.map(stat => `
+                <div class="stat-card">
+                    <div class="stat-label">${stat.label}</div>
+                    <div class="stat-value">${stat.value}</div>
+                    <div class="stat-target">${stat.target}</div>
+                </div>
+            `).join('');
+        }
+        
+        function renderMacroChart(data) {
+            const last7Days = data.daily_summary.slice(0, 7).reverse();
+            
+            const ctx = document.getElementById('macroChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: last7Days.map(d => d.date),
+                    datasets: [
+                        {
+                            label: 'Calories',
+                            data: last7Days.map(d => d.total_calories),
+                            borderColor: '#2563EB',
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Protein (g)',
+                            data: last7Days.map(d => d.total_protein_g),
+                            borderColor: '#10B981',
+                            yAxisID: 'y1'
+                        },
+                        {
+                            label: 'Carbs (g)',
+                            data: last7Days.map(d => d.total_carbs_g),
+                            borderColor: '#F59E0B',
+                            yAxisID: 'y1'
+                        },
+                        {
+                            label: 'Fat (g)',
+                            data: last7Days.map(d => d.total_fat_g),
+                            borderColor: '#EF4444',
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { position: 'left', title: { display: true, text: 'Calories' }},
+                        y1: { position: 'right', title: { display: true, text: 'Macros (g)' }, grid: { drawOnChartArea: false }}
+                    }
+                }
+            });
+        }
+        
+        function renderWeightChart(data) {
+            const last30 = data.weight_log.slice(0, 30).reverse();
+            
+            const ctx = document.getElementById('weightChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: last30.map(w => w.date),
+                    datasets: [{
+                        label: 'Weight (kg)',
+                        data: last30.map(w => w.weight_kg),
+                        borderColor: '#2563EB',
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { title: { display: true, text: 'Weight (kg)' }}
+                    }
+                }
+            });
+        }
+        
+        function renderSuggestions(data) {
+            if (!data.suggestions || data.suggestions.length === 0) {
+                document.getElementById('suggestionsContainer').innerHTML = '';
+                return;
+            }
+            
+            const html = `
+                <div class="suggestions">
+                    <h2>Smart Suggestions</h2>
+                    ${data.suggestions.map(s => `
+                        <div class="suggestion-item">
+                            <strong>${s.title}</strong><br>
+                            ${s.description}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            document.getElementById('suggestionsContainer').innerHTML = html;
+        }
+        
+        function renderMealTable(data) {
+            const tbody = document.getElementById('mealTableBody');
+            const last20 = data.meals.slice(0, 20);
+            
+            tbody.innerHTML = last20.map(meal => `
+                <tr>
+                    <td>${new Date(meal.timestamp).toLocaleString()}</td>
+                    <td>${meal.meal_description}</td>
+                    <td>${Math.round(meal.calories)}</td>
+                    <td>${Math.round(meal.protein_g || 0)}g</td>
+                    <td>${Math.round(meal.carbs_g || 0)}g</td>
+                    <td>${Math.round(meal.fat_g || 0)}g</td>
+                    <td>${meal.estimate_confidence || 'N/A'}</td>
+                </tr>
+            `).join('');
+        }
+        
+        // Load data on page load
+        loadData();
+    </script>
+</body>
+</html>
