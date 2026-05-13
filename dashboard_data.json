@@ -1,18 +1,47 @@
 {
-  "meals": [],
-  "daily_summary": [],
+  "meals": [
+    {
+      "id": 1,
+      "timestamp": "2026-05-13T09:39:29.776404+05:30",
+      "date": "2026-05-13",
+      "meal_description": "masala rice with greek yoghurt",
+      "calories": 385.0,
+      "protein_g": 18.0,
+      "carbs_g": 55.0,
+      "fat_g": 8.0,
+      "fiber_g": 3.0,
+      "sugar_g": 5.0,
+      "sodium_mg": 450.0,
+      "portion_size": "masala rice 300 cal + yoghurt 85 cal",
+      "estimate_confidence": "high",
+      "meal_location": "home"
+    }
+  ],
+  "daily_summary": [
+    {
+      "date": "2026-05-13",
+      "total_calories": 385.0,
+      "total_protein_g": 18.0,
+      "total_carbs_g": 55.0,
+      "total_fat_g": 8.0,
+      "total_fiber_g": 3.0,
+      "total_sugar_g": 5.0,
+      "total_sodium_mg": 450.0,
+      "meal_count": 1
+    }
+  ],
   "weight_log": [
     {
       "id": 1,
-      "date": "2026-05-12",
-      "weight_kg": 78.0,
-      "timestamp": "2026-05-12T08:33:01.380286Z"
+      "date": "2026-05-13",
+      "weight_kg": 79.0,
+      "timestamp": "2026-05-13T04:09:29.760036Z"
     }
   ],
   "wellbeing_log": [],
   "user_profile": {
     "age": "29",
-    "weight_kg": "78",
+    "weight_kg": "79",
     "activity_level": "moderate",
     "goal": "body_recomp",
     "protein_target_g": "156",
@@ -23,5 +52,5 @@
     "sodium_limit_mg": "2300"
   },
   "suggestions": [],
-  "last_updated": "2026-05-12T08:33:01.393374Z"
+  "last_updated": "2026-05-13T04:09:29.799256Z"
 }
